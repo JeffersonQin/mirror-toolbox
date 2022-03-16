@@ -105,25 +105,38 @@ def cli():
 # affine rotate
 @click.option('--use-affine-rotate', default=False, type=bool, help='use affining rotate')
 @click.option('--affine-rotate-speed', default=10, type=float, help='affine rotate speed (%/second)')
+# inverse effect
+@click.option('--use-inverse-effect', default=False, type=bool, help='use inverse effect')
+@click.option('--inverse-effect-interval', default=0.05, type=float, help='inverse effect interval (second)')
 def start(
 	hwnd, 
 	x1, y1, x2, y2, 
-	use_affine_rotate, affine_rotate_speed):
+	use_affine_rotate, affine_rotate_speed, 
+	use_inverse_effect, inverse_effect_interval):
 	'''
 	Start toolbox
 	'''
 	global g_fps
 
+	# hwnd
 	if hwnd is None:
 		win32gui.EnumWindows(enum_callback, None)
 		if g_hwnd is None:
 			raise Exception('No window found')
 		hwnd = g_hwnd
+	# shape
+	width = x2 - x1
+	height = y2 - y1
 
 	# rotate top left
 	rtl_side, rtl_pos = 0, 0.0
 	# rotate top right
 	rtr_side, rtr_pos = 1, 0.0
+
+	# inverse
+	time_counter = 0.0
+	last_time = time.time()
+	inverse_status = False
 
 	while True:
 		# used to calculate fps
@@ -139,9 +152,6 @@ def start(
 		img = cv2.imread(bmpfilenamename)
 		img_processed = img
 
-		width = float(img.shape[1])
-		height = float(img.shape[0])
-
 		if use_affine_rotate:
 			rtl_side, rtl_pos = update_rotate(rtl_side, rtl_pos, affine_rotate_speed / g_fps)
 			rtr_side, rtr_pos = update_rotate(rtr_side, rtr_pos, affine_rotate_speed / g_fps)
@@ -154,7 +164,17 @@ def start(
 				np.float32([[width / 2.0, height / 2.0], [rtl_x, rtl_y], [rtr_x, rtr_y]])
 			)
 			
-			img_processed = cv2.warpAffine(img, affine_matrix, (img.shape[1], img.shape[0]))
+			img_processed = cv2.warpAffine(img_processed, affine_matrix, (width, height))
+
+		if use_inverse_effect:
+			now_time = time.time()
+			time_counter += (now_time - last_time)
+			last_time = now_time
+			if time_counter >= inverse_effect_interval:
+				time_counter = time_counter % inverse_effect_interval
+				inverse_status = not inverse_status
+			if inverse_status:
+				img_processed = cv2.bitwise_not(img_processed)
 
 		cv2.imshow('screenshot', img_processed)
 		cv2.waitKey(1)
