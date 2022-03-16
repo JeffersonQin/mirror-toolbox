@@ -1,3 +1,4 @@
+from email.policy import default
 import click
 import cv2
 from cv2 import rotate
@@ -89,6 +90,36 @@ def calc_rotate(side, pos, width, height):
 		return 0, height * (1 - pos)
 
 
+class StatusSwitcher:
+
+	def __init__(self, status, duration, interval):
+		'''Constructor of StatusSwitcher
+		===============================
+		* :param: status: initial status
+		* :param: duration: duration of status (True)
+		* :param: interval: interval (False) between status
+		'''
+		self.status = status
+		self.duration = duration
+		self.interval = interval
+		self.counter = 0.0
+		self.last_time = time.time()
+
+	def update(self):
+		now_time = time.time()
+		self.counter += now_time - self.last_time
+		self.last_time = now_time
+
+		if self.status is True:
+			if self.counter >= self.duration:
+				self.status = False
+				self.counter %= self.duration
+		else:
+			if self.counter >= self.interval:
+				self.status = True
+				self.counter %= self.interval
+
+
 @click.group()
 def cli():
 	pass
@@ -104,15 +135,38 @@ def cli():
 @click.option('--y2', default=None, type=int, help='bottom right vertical coordinate of ROI')
 # affine rotate
 @click.option('--use-affine-rotate', default=False, type=bool, help='use affining rotate')
-@click.option('--affine-rotate-speed', default=10, type=float, help='affine rotate speed (%/second)')
+@click.option('--affine-rotate-speed', default=10, type=float, help='affine rotate speed (% / second)')
 # inverse effect
 @click.option('--use-inverse-effect', default=False, type=bool, help='use inverse effect')
 @click.option('--inverse-effect-interval', default=0.05, type=float, help='inverse effect interval (second)')
+# rgb split glitch effect
+@click.option('--use-rgb-split-glitch', default=False, type=bool, help='use rgb split glitch art effect')
+@click.option('--use-tiktok-style', default=False, type=bool, help='use tiktok style rgb split glitch')
+@click.option('--glitch-duration', default=0.5, type=float, help='rgb split glitch duration (second)')
+@click.option('--glitch-interval', default=0.5, type=float, help='rgb split glitch interval (second)')
+@click.option('--glitch-rx-offset-mean', default=5, type=float, help='glitch: mean X offset of R channel')
+@click.option('--glitch-gx-offset-mean', default=-5, type=float, help='glitch: mean X offset of G channel')
+@click.option('--glitch-bx-offset-mean', default=3, type=float, help='glitch: mean X offset of B channel')
+@click.option('--glitch-ry-offset-mean', default=5, type=float, help='glitch: mean Y offset of R channel')
+@click.option('--glitch-gy-offset-mean', default=-5, type=float, help='glitch: mean Y offset of G channel')
+@click.option('--glitch-by-offset-mean', default=3, type=float, help='glitch: mean Y offset of B channel')
+@click.option('--glitch-rx-offset-sd', default=2, type=float, help='glitch: sd of X offset of R channel')
+@click.option('--glitch-gx-offset-sd', default=2, type=float, help='glitch: sd of X offset of G channel')
+@click.option('--glitch-bx-offset-sd', default=2, type=float, help='glitch: sd of X offset of B channel')
+@click.option('--glitch-ry-offset-sd', default=2, type=float, help='glitch: sd of Y offset of R channel')
+@click.option('--glitch-gy-offset-sd', default=2, type=float, help='glitch: sd of Y offset of G channel')
+@click.option('--glitch-by-offset-sd', default=2, type=float, help='glitch: sd of Y offset of B channel')
 def start(
 	hwnd, 
 	x1, y1, x2, y2, 
 	use_affine_rotate, affine_rotate_speed, 
-	use_inverse_effect, inverse_effect_interval):
+	use_inverse_effect, inverse_effect_interval, 
+	use_rgb_split_glitch, use_tiktok_style, 
+	glitch_duration, glitch_interval, 
+	glitch_rx_offset_mean, glitch_gx_offset_mean, glitch_bx_offset_mean,
+	glitch_ry_offset_mean, glitch_gy_offset_mean, glitch_by_offset_mean,
+	glitch_rx_offset_sd, glitch_gx_offset_sd, glitch_bx_offset_sd,
+	glitch_ry_offset_sd, glitch_gy_offset_sd, glitch_by_offset_sd):
 	'''
 	Start toolbox
 	'''
@@ -133,10 +187,22 @@ def start(
 	# rotate top right
 	rtr_side, rtr_pos = 1, 0.0
 
+	# tiktok
+	if use_tiktok_style:
+		glitch_duration = 1
+		glitch_interval = 0.00001
+		glitch_rx_offset_mean = 0.0
+		glitch_gx_offset_mean = 0.0
+		glitch_bx_offset_mean = 0.0
+		glitch_ry_offset_mean = 0.0
+		glitch_gy_offset_mean = 0.0
+		glitch_by_offset_mean = 0.0
+
 	# inverse
-	time_counter = 0.0
-	last_time = time.time()
-	inverse_status = False
+	inverse_switcher = StatusSwitcher(False, inverse_effect_interval, inverse_effect_interval)
+
+	# glitch
+	glitch_switcher = StatusSwitcher(False, glitch_duration, glitch_interval)
 
 	while True:
 		# used to calculate fps
@@ -167,14 +233,26 @@ def start(
 			img_processed = cv2.warpAffine(img_processed, affine_matrix, (width, height))
 
 		if use_inverse_effect:
-			now_time = time.time()
-			time_counter += (now_time - last_time)
-			last_time = now_time
-			if time_counter >= inverse_effect_interval:
-				time_counter = time_counter % inverse_effect_interval
-				inverse_status = not inverse_status
-			if inverse_status:
+			inverse_switcher.update()
+			if inverse_switcher.status:
 				img_processed = cv2.bitwise_not(img_processed)
+
+		if use_rgb_split_glitch:
+			glitch_switcher.update()
+			if glitch_switcher.status:
+				uxr = np.random.normal(glitch_rx_offset_mean, glitch_rx_offset_sd)
+				uxg = np.random.normal(glitch_gx_offset_mean, glitch_gx_offset_sd)
+				uxb = np.random.normal(glitch_bx_offset_mean, glitch_bx_offset_sd)
+				uyr = np.random.normal(glitch_ry_offset_mean, glitch_ry_offset_sd)
+				uyg = np.random.normal(glitch_gy_offset_mean, glitch_gy_offset_sd)
+				uyb = np.random.normal(glitch_by_offset_mean, glitch_by_offset_sd)
+
+				img_processed[:, :, 0] = cv2.warpAffine(img_processed[:, :, 0], 
+					np.float32([[1, 0, uxr], [0, 1, uyr]]), (width, height))
+				img_processed[:, :, 1] = cv2.warpAffine(img_processed[:, :, 1], 
+					np.float32([[1, 0, uxg], [0, 1, uyg]]), (width, height))
+				img_processed[:, :, 2] = cv2.warpAffine(img_processed[:, :, 2], 
+					np.float32([[1, 0, uxb], [0, 1, uyb]]), (width, height))
 
 		cv2.imshow('screenshot', img_processed)
 		cv2.waitKey(1)
