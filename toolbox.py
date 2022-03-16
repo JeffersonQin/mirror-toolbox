@@ -103,10 +103,8 @@ class ToolBox:
 	affine_rotate_speed: float = 10.0
 	
 	use_inverse_effect: bool = False
-	inverse_switcher = StatusSwitcher(False, 0.05, 0.05)
 	
 	use_rgb_split_glitch: bool = False
-	glitch_switcher = StatusSwitcher(False, 0.5, 0.5)
 	glitch_rx_offset_mean: float = 5.0
 	glitch_gx_offset_mean: float = -5.0
 	glitch_bx_offset_mean: float = 3.0
@@ -170,6 +168,9 @@ class ToolBox:
 		self.rtl_side, self.rtl_pos = 0, 0.0
 		# rotate top right
 		self.rtr_side, self.rtr_pos = 1, 0.0
+
+		self.glitch_switcher = StatusSwitcher(False, 0.5, 0.5)
+		self.inverse_switcher = StatusSwitcher(False, 0.05, 0.05)
 
 
 	def use_tiktok(self):
