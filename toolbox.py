@@ -96,8 +96,8 @@ class ToolBox:
 
 	x1: int = 0
 	y1: int = 0
-	x2: int = 0
-	y2: int = 0
+	x2: int = 10
+	y2: int = 10
 	
 	use_affine_rotate: bool = False
 	affine_rotate_speed: float = 10.0
@@ -153,13 +153,18 @@ class ToolBox:
 		win32gui.DeleteObject(dataBitMap.GetHandle())
 
 
+	def init_hwnd(self):
+		win32gui.EnumWindows(enum_callback, None)
+		if g_hwnd is None:
+			raise Exception('No window found')
+		self.hwnd = g_hwnd
+
+
 	def __init__(self, hwnd):
 		if hwnd is None:
-			win32gui.EnumWindows(enum_callback, None)
-			if g_hwnd is None:
-				raise Exception('No window found')
-			hwnd = g_hwnd
-		self.hwnd = hwnd
+			self.init_hwnd()
+		else:
+			self.hwnd = hwnd
 
 		# rotate top left
 		self.rtl_side, self.rtl_pos = 0, 0.0
@@ -168,14 +173,31 @@ class ToolBox:
 
 
 	def use_tiktok(self):
-		self.glitch_switcher.glitch_duration = 1
-		self.glitch_switcher.glitch_interval = 0.00001
+		self.glitch_switcher.duration = 1
+		self.glitch_switcher.interval = 0.00001
 		self.glitch_rx_offset_mean = 0.0
 		self.glitch_gx_offset_mean = 0.0
 		self.glitch_bx_offset_mean = 0.0
 		self.glitch_ry_offset_mean = 0.0
 		self.glitch_gy_offset_mean = 0.0
 		self.glitch_by_offset_mean = 0.0
+
+
+	def use_default_glitch(self):
+		self.glitch_switcher.duration = 0.5
+		self.glitch_switcher.interval = 0.5
+		self.glitch_rx_offset_mean = 5.0
+		self.glitch_gx_offset_mean = -5.0
+		self.glitch_bx_offset_mean = 3.0
+		self.glitch_ry_offset_mean = 5.0
+		self.glitch_gy_offset_mean = -5.0
+		self.glitch_by_offset_mean = 3.0
+		self.glitch_rx_offset_sd = 2.0
+		self.glitch_gx_offset_sd = 2.0
+		self.glitch_bx_offset_sd = 2.0
+		self.glitch_ry_offset_sd = 2.0
+		self.glitch_gy_offset_sd = 2.0
+		self.glitch_by_offset_sd = 2.0
 
 
 	def show(self, fps):
