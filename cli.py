@@ -1,7 +1,5 @@
-from email.policy import default
 import click
 import cv2
-from cv2 import rotate
 import win32api
 import win32con
 import win32ui
