@@ -37,7 +37,7 @@ def impl_glfw_init():
 
 
 def main():
-	toolbox_instance = ToolBox(None)
+	toolbox_instance = ToolBox(0)
 
 	window = impl_glfw_init()
 	imgui.create_context()
@@ -45,6 +45,7 @@ def main():
 
 	total_fps = 0.0
 	active = False
+	window_found = True
 
 	while not glfw.window_should_close(window):
 		start = time.time()
@@ -115,7 +116,20 @@ def main():
 			pickle.dump(toolbox_instance, open('toolbox.bin', 'wb+'))
 		if imgui.button(label='Load Profile'):
 			toolbox_instance: ToolBox = pickle.load(open('toolbox.bin', 'rb'))
-			toolbox_instance.init_hwnd()
+		imgui.end()
+
+		imgui.begin('Window Settings')
+		_, toolbox_instance.hwnd = imgui.input_int(label='hwnd', value=toolbox_instance.hwnd)
+		if imgui.button(label='Find ClassIn Window'):
+			try:
+				toolbox_instance.init_hwnd()
+				window_found = True
+			except:
+				window_found = False
+		if not window_found:
+			imgui.push_style_color(imgui.COLOR_TEXT, 255, 0, 0)
+			imgui.text('Could not find window')
+			imgui.pop_style_color()
 		imgui.end()
 
 		gl.glClearColor(0., 0., 0., 0)

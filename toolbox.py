@@ -152,6 +152,8 @@ class ToolBox:
 
 
 	def init_hwnd(self):
+		global g_hwnd
+		g_hwnd = None
 		win32gui.EnumWindows(enum_callback, None)
 		if g_hwnd is None:
 			raise Exception('No window found')
