@@ -3,13 +3,28 @@ import glfw
 import time
 import OpenGL.GL as gl
 import pickle
+import win32gui
 from imgui.integrations.glfw import GlfwRenderer
 from toolbox import ToolBox
 
 
+version_code = '0.1'
+window_name = f'Mirror Toolbox v{version_code} by @JeffersonQin'
+
+
+def get_foreground_window():
+	try:
+		hwnd = win32gui.GetForegroundWindow()
+		title = win32gui.GetWindowText(hwnd)
+		if title == window_name:
+			return 'current', None
+		return hwnd, win32gui.GetClassName(hwnd)
+	except:
+		return 'error', None
+
+
 def impl_glfw_init():
-    width, height = 880, 500
-    window_name = 'Mirror Toolbox v0.1 by @JeffersonQin'
+    width, height = 810, 510
 
     if not glfw.init():
         print('Could not initialize OpenGL context')
@@ -46,6 +61,10 @@ def main():
 	total_fps = 0.0
 	active = False
 	window_found = True
+	full_area_error = False
+	capture_foregroud = False
+	foreground_hwnd = 0
+	foreground_class = ''
 
 	while not glfw.window_should_close(window):
 		start = time.time()
@@ -69,6 +88,19 @@ def main():
 		if toolbox_instance.x1 >= toolbox_instance.x2 or toolbox_instance.y1 >= toolbox_instance.y2:
 			imgui.push_style_color(imgui.COLOR_TEXT, 255, 0, 0)
 			imgui.text('Invalid capture area')
+			imgui.pop_style_color()
+		if imgui.button(label='Use full area'):
+			try:
+				x1, y1, x2, y2 = win32gui.GetWindowRect(toolbox_instance.hwnd)
+				x2 -= x1; x1 = 0
+				y2 -= y1; y1 = 0
+				toolbox_instance.x1, toolbox_instance.y1, toolbox_instance.x2, toolbox_instance.y2 = x1, y1, x2, y2
+				full_area_error = False
+			except:
+				full_area_error = True
+		if full_area_error:
+			imgui.push_style_color(imgui.COLOR_TEXT, 255, 0, 0)
+			imgui.text('win32api error occurred')
 			imgui.pop_style_color()
 		imgui.end()
 
@@ -130,6 +162,25 @@ def main():
 			imgui.push_style_color(imgui.COLOR_TEXT, 255, 0, 0)
 			imgui.text('Could not find window')
 			imgui.pop_style_color()
+		_, capture_foregroud = imgui.checkbox(label='Foreground Window Capture', state=capture_foregroud)
+		if capture_foregroud:
+			now_foreground, class_name = get_foreground_window()
+			if now_foreground == 'current':
+				imgui.push_style_color(imgui.COLOR_TEXT, 255, 0, 0)
+				imgui.text('capturing suspended')
+				imgui.pop_style_color()
+			elif now_foreground == 'error':
+				imgui.push_style_color(imgui.COLOR_TEXT, 255, 0, 0)
+				imgui.text('win32 error occurred')
+				imgui.pop_style_color()
+			else:
+				foreground_hwnd = now_foreground
+				foreground_class = class_name
+			imgui.text('Foreground Info')
+			imgui.text('HWND: 0x%x' % foreground_hwnd)
+			imgui.text('Class: %s' % foreground_class)
+			if imgui.button(label='Use current HWND'):
+				toolbox_instance.hwnd = foreground_hwnd
 		imgui.end()
 
 		gl.glClearColor(0., 0., 0., 0)
