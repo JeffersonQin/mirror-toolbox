@@ -11,6 +11,11 @@ flowchart LR
     B -- capture --> C
 ```
 
+注：对于 ClassIn 之外的软件亦可运行，后文会有描述。
+
+* CLI: 指定 `HWND` 参数
+* GUI: 指定 `HWND` 参数，不自动寻找 ClassIn 窗口
+
 ## 基本功能
 
 已实现以下功能。
@@ -43,7 +48,13 @@ https://user-images.githubusercontent.com/30655701/158623903-808892bf-6281-4cfb-
 > python gui.py
 ```
 
-![image](https://user-images.githubusercontent.com/30655701/158624223-318ee30b-b65f-4458-8810-628a2810f462.png)
+![](imgs/screenshot.png)
+
+在进入 ClassIn 的教室之后，点击 `Find ClassIn Window`，然后再点击 `Activate` 即可开始运行。
+
+GUI 还编写了保存 / 加载配置的功能。
+
+注意：如果不想要捕获 ClassIn，而是想捕获其他窗口，只需要自己指定窗口的 **十进制** HWND 即可。
 
 ## CLI 使用
 
