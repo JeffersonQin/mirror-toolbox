@@ -14,7 +14,7 @@ flowchart LR
 注：对于 ClassIn 之外的软件亦可运行，后文会有描述。
 
 * CLI: 指定 `HWND` 参数
-* GUI: 指定 `HWND` 参数，不自动寻找 ClassIn 窗口
+* GUI: 指定 `HWND` 参数，不自动寻找 ClassIn 窗口，或者使用前台窗口捕获器。
 
 ## 基本功能
 
@@ -55,6 +55,8 @@ https://user-images.githubusercontent.com/30655701/158623903-808892bf-6281-4cfb-
 GUI 还编写了保存 / 加载配置的功能。
 
 注意：如果不想要捕获 ClassIn，而是想捕获其他窗口，只需要自己指定窗口的 **十进制** HWND 即可。
+
+Update: 增加了前台窗体捕获功能。开启 `Foreground Window Capture` 后，捕获好窗口后点击 `Use Current HWND` 即可设置。
 
 ## CLI 使用
 
